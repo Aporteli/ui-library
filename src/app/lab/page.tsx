@@ -30,9 +30,20 @@ type PreviewState = 'default' | 'hover' | 'active' | 'focus' | 'disabled' | 'loa
 
 type SaveStatus = 'saved' | 'unsaved' | 'saving';
 
-const DEFAULT_CODE = `<button className="rounded-xl bg-zinc-900 px-5 py-3 text-sm font-semibold text-white shadow-lg transition hover:-translate-y-0.5 hover:shadow-xl">
-  Click me
-</button>`;
+const DEFAULT_CODE = `function Button() {
+  const [count, setCount] = React.useState(0);
+
+  return (
+    <button
+      onClick={() => setCount(count + 1)}
+      className="rounded-xl bg-zinc-900 px-5 py-3 text-sm font-semibold text-white shadow-lg"
+    >
+      Clicked {count} times
+    </button>
+  );
+}
+
+<Button />`;
 
 const DEFAULT_PREVIEW_COLOR = '#171717';
 
