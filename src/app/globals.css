@@ -1,26 +1,69 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-bg: #0e1b2b;
+  --color-paper: #f5f1e8;
+  --color-ink: #101820;
+  --color-fg: #e7e2d6;
+  --color-accent: #e4572e;
+  --color-line: #2a3b52;
+  --color-line-paper: #c9c2ae;
+  --color-muted: #7c93a8;
+  --color-success: #4c9a6a;
+
+  --font-display: var(--font-space-grotesk);
+  --font-body: var(--font-ibm-plex-sans);
+  --font-mono: var(--font-ibm-plex-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  border-color: var(--color-line);
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-bg);
+  color: var(--color-fg);
+  font-family: var(--font-body), sans-serif;
+}
+
+::selection {
+  background-color: color-mix(in srgb, var(--color-accent) 35%, transparent);
+  color: var(--color-fg);
+}
+
+/* Blueprint graph-paper backdrop, used behind the hero and gallery */
+.bg-blueprint {
+  background-image:
+    linear-gradient(rgba(231, 226, 214, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(231, 226, 214, 0.05) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+.bg-blueprint-paper {
+  background-image:
+    linear-gradient(rgba(16, 24, 32, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(16, 24, 32, 0.06) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* Respect reduced-motion preferences site-wide */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Visible keyboard focus, consistent across the site */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }
