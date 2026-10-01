@@ -1,15 +1,8 @@
 'use client';
 
-type PreviewMode =
-  | 'desktop'
-  | 'tablet'
-  | 'mobile';
+type PreviewMode = 'desktop' | 'tablet' | 'mobile';
 
-type PreviewBackground =
-  | 'dark'
-  | 'light'
-  | 'grid'
-  | 'checker';
+type PreviewPattern = 'none' | 'grid' | 'checker';
 
 type PreviewState =
   | 'default'
@@ -22,68 +15,81 @@ type PreviewState =
 type PreviewProps = {
   code: string;
   mode: PreviewMode;
-  background: PreviewBackground;
+  pattern: PreviewPattern;
+  color: string;
   state: PreviewState;
 };
 
-type BackgroundStyle = {
-  backgroundColor: string;
-  color: string;
-  backgroundImage?: string;
-  backgroundSize?: string;
-  backgroundPosition?: string;
-};
-
-function escapeScriptContent(
-  value: string,
-) {
-  return value.replace(
-    /<\/script/gi,
-    '<\\/script',
-  );
+function escapeScriptContent(value: string) {
+  return value.replace(/<\/script/gi, '<\\/script');
 }
 
-const MODE_WIDTHS: Record<
-  PreviewMode,
-  string
-> = {
+const MODE_WIDTHS: Record<PreviewMode, string> = {
   desktop: '100%',
   tablet: '768px',
   mobile: '390px',
 };
 
-const BACKGROUND_STYLES: Record<
-  PreviewBackground,
-  BackgroundStyle
-> = {
-  dark: {
-    backgroundColor: '#171717',
-    color: 'white',
-  },
+function hexToRgb(hex: string): { r: number; g: number; b: number } {
+  const cleaned = hex.replace('#', '').trim();
 
-  light: {
-    backgroundColor: '#f5f5f5',
-    color: '#171717',
-  },
+  const full =
+    cleaned.length === 3
+      ? cleaned
+          .split('')
+          .map((c) => c + c)
+          .join('')
+      : cleaned;
 
-  grid: {
-    backgroundColor: '#171717',
-    backgroundImage:
-      'linear-gradient(rgba(255,255,255,.06) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.06) 1px, transparent 1px)',
-    backgroundSize: '24px 24px',
-    color: 'white',
-  },
+  return {
+    r: parseInt(full.substring(0, 2), 16) || 0,
+    g: parseInt(full.substring(2, 4), 16) || 0,
+    b: parseInt(full.substring(4, 6), 16) || 0,
+  };
+}
 
-  checker: {
-    backgroundColor: '#171717',
-    backgroundImage:
-      'linear-gradient(45deg, rgba(255,255,255,.045) 25%, transparent 25%), linear-gradient(-45deg, rgba(255,255,255,.045) 25%, transparent 25%), linear-gradient(45deg, transparent 75%, rgba(255,255,255,.045) 75%), linear-gradient(-45deg, transparent 75%, rgba(255,255,255,.045) 75%)',
-    backgroundSize: '24px 24px',
-    backgroundPosition:
-      '0 0, 0 12px, 12px -12px, -12px 0',
-    color: 'white',
-  },
-};
+function getContrastColor(hex: string): string {
+  const { r, g, b } = hexToRgb(hex);
+
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+
+  return luminance > 0.55 ? '#171717' : '#ffffff';
+}
+
+function rgbaFromHex(hex: string, alpha: number): string {
+  const { r, g, b } = hexToRgb(hex);
+
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function getPatternStyles(
+  pattern: PreviewPattern,
+  color: string,
+): { image?: string; size?: string; position?: string } {
+  if (pattern === 'none') {
+    return {};
+  }
+
+  const overlay = getContrastColor(color);
+
+  if (pattern === 'grid') {
+    return {
+      image: `linear-gradient(${rgbaFromHex(overlay, 0.07)} 1px, transparent 1px), linear-gradient(90deg, ${rgbaFromHex(overlay, 0.07)} 1px, transparent 1px)`,
+      size: '24px 24px',
+      position: '0 0',
+    };
+  }
+
+  if (pattern === 'checker') {
+    return {
+      image: `linear-gradient(45deg, ${rgbaFromHex(overlay, 0.05)} 25%, transparent 25%), linear-gradient(-45deg, ${rgbaFromHex(overlay, 0.05)} 25%, transparent 25%), linear-gradient(45deg, transparent 75%, ${rgbaFromHex(overlay, 0.05)} 75%), linear-gradient(-45deg, transparent 75%, ${rgbaFromHex(overlay, 0.05)} 75%)`,
+      size: '24px 24px',
+      position: '0 0, 0 12px, 12px -12px, -12px 0',
+    };
+  }
+
+  return {};
+}
 
 const STATE_CSS = `
   [data-preview-state="hover"] button,
@@ -150,17 +156,12 @@ const STATE_CSS = `
   }
 `;
 
-export function Preview({
-  code,
-  mode,
-  background,
-  state,
-}: PreviewProps) {
-  const safeCode =
-    escapeScriptContent(code);
+export function Preview({ code, mode, pattern, color, state }: PreviewProps) {
+  const safeCode = escapeScriptContent(code);
 
-  const backgroundStyle =
-    BACKGROUND_STYLES[background];
+  const textColor = getContrastColor(color);
+
+  const patternStyles = getPatternStyles(pattern, color);
 
   const previewDocument = `
 <!DOCTYPE html>
@@ -190,26 +191,12 @@ export function Preview({
       align-items: center;
       justify-content: center;
 
-      background-color: ${backgroundStyle.backgroundColor};
-      color: ${backgroundStyle.color};
+      background-color: ${color};
+      color: ${textColor};
 
-      ${
-        backgroundStyle.backgroundImage
-          ? `background-image: ${backgroundStyle.backgroundImage};`
-          : ''
-      }
-
-      ${
-        backgroundStyle.backgroundSize
-          ? `background-size: ${backgroundStyle.backgroundSize};`
-          : ''
-      }
-
-      ${
-        backgroundStyle.backgroundPosition
-          ? `background-position: ${backgroundStyle.backgroundPosition};`
-          : ''
-      }
+      ${patternStyles.image ? `background-image: ${patternStyles.image};` : ''}
+      ${patternStyles.size ? `background-size: ${patternStyles.size};` : ''}
+      ${patternStyles.position ? `background-position: ${patternStyles.position};` : ''}
 
       font-family:
         Inter,

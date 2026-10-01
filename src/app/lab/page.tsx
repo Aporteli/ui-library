@@ -24,7 +24,7 @@ type ComponentItem = {
 
 type PreviewMode = 'desktop' | 'tablet' | 'mobile';
 
-type PreviewBackground = 'dark' | 'light' | 'grid' | 'checker';
+type PreviewPattern = 'none' | 'grid' | 'checker';
 
 type PreviewState = 'default' | 'hover' | 'active' | 'focus' | 'disabled' | 'loading';
 
@@ -293,7 +293,9 @@ export default function LabPage() {
 
   const [previewMode, setPreviewMode] = useState<PreviewMode>('desktop');
 
-  const [previewBackground, setPreviewBackground] = useState<PreviewBackground>('dark');
+  const [previewColor, setPreviewColor] = useState('#171717');
+
+  const [previewPattern, setPreviewPattern] = useState<PreviewPattern>('none');
 
   const [previewState, setPreviewState] = useState<PreviewState>('default');
 
@@ -841,26 +843,25 @@ export default function LabPage() {
     },
   ];
 
-  const previewBackgrounds: {
-    id: PreviewBackground;
+  const previewPatterns: {
+    id: PreviewPattern;
     label: string;
   }[] = [
-    {
-      id: 'dark',
-      label: 'Dark',
-    },
-    {
-      id: 'light',
-      label: 'Light',
-    },
-    {
-      id: 'grid',
-      label: 'Grid',
-    },
-    {
-      id: 'checker',
-      label: 'Checker',
-    },
+    { id: 'none', label: 'Solid' },
+    { id: 'grid', label: 'Grid' },
+    { id: 'checker', label: 'Checker' },
+  ];
+
+  const previewPresetColors: {
+    id: string;
+    color: string;
+  }[] = [
+    { id: 'Dark', color: '#171717' },
+    { id: 'Light', color: '#f5f5f5' },
+    { id: 'Slate', color: '#0f172a' },
+    { id: 'Cream', color: '#f5f1e8' },
+    { id: 'Mint', color: '#d1fae5' },
+    { id: 'Rose', color: '#ffe4e6' },
   ];
 
   return (
@@ -1098,22 +1099,60 @@ export default function LabPage() {
                   })}
                 </div>
 
-                <div className="flex items-center gap-1 rounded-lg border border-white/10 bg-white/[0.03] p-1">
-                  {previewBackgrounds.map((background) => {
-                    const active = previewBackground === background.id;
+                <div className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.03] p-1">
+                  {previewPresetColors.map((preset) => {
+                    const active = previewColor.toLowerCase() === preset.color.toLowerCase();
 
                     return (
                       <button
-                        key={background.id}
+                        key={preset.id}
                         type="button"
-                        onClick={() => setPreviewBackground(background.id)}
+                        onClick={() => setPreviewColor(preset.color)}
+                        title={preset.id}
+                        aria-label={preset.id}
+                        className={[
+                          'h-6 w-6 rounded-md border transition',
+                          active
+                            ? 'border-white/80 ring-1 ring-white/40'
+                            : 'border-white/15 hover:border-white/40',
+                        ].join(' ')}
+                        style={{ backgroundColor: preset.color }}
+                      />
+                    );
+                  })}
+
+                  <label
+                    title="Custom color"
+                    className="relative h-6 w-6 cursor-pointer overflow-hidden rounded-md border border-white/15 transition hover:border-white/40"
+                    style={{
+                      background:
+                        'conic-gradient(from 180deg, #f87171, #fbbf24, #34d399, #60a5fa, #a78bfa, #f87171)',
+                    }}>
+                    <input
+                      type="color"
+                      value={previewColor}
+                      onChange={(event) => setPreviewColor(event.target.value)}
+                      className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                    />
+                  </label>
+                </div>
+
+                <div className="flex items-center gap-1 rounded-lg border border-white/10 bg-white/[0.03] p-1">
+                  {previewPatterns.map((item) => {
+                    const active = previewPattern === item.id;
+
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => setPreviewPattern(item.id)}
                         className={[
                           'rounded-md px-2.5 py-1.5 text-[11px] font-medium transition',
                           active
                             ? 'bg-white/10 text-white shadow-sm'
                             : 'text-white/35 hover:bg-white/5 hover:text-white/70',
                         ].join(' ')}>
-                        {background.label}
+                        {item.label}
                       </button>
                     );
                   })}
@@ -1122,7 +1161,13 @@ export default function LabPage() {
             </div>
 
             <div className="min-h-0">
-              <Preview code={code} mode={previewMode} background={previewBackground} state={previewState} />
+              <Preview
+                code={code}
+                mode={previewMode}
+                pattern={previewPattern}
+                color={previewColor}
+                state={previewState}
+              />
             </div>
           </div>
 
