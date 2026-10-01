@@ -1,9 +1,10 @@
-import { Button } from "@/components/ui/Button";
+import { Button } from '@/components/ui/Button';
 
 const links = [
-  { label: "Components", href: "#components" },
-  { label: "Principles", href: "#principles" },
-  { label: "Code", href: "#code" },
+  { label: 'Components', href: '#components' },
+  { label: 'Principles', href: '#principles' },
+  { label: 'Code', href: '#code' },
+  { label: 'lab', href: './lab' },
 ];
 
 export function Navbar() {
@@ -29,8 +30,7 @@ export function Navbar() {
         <div className="flex items-center gap-3">
           <a
             href="https://github.com"
-            className="hidden font-body text-sm text-muted transition-colors hover:text-fg sm:inline"
-          >
+            className="hidden font-body text-sm text-muted transition-colors hover:text-fg sm:inline">
             GitHub
           </a>
           <Button size="sm" variant="outline" className="border-fg/25 text-fg hover:border-fg">
