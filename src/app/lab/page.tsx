@@ -34,6 +34,8 @@ const DEFAULT_CODE = `<button className="rounded-xl bg-zinc-900 px-5 py-3 text-s
   Click me
 </button>`;
 
+const DEFAULT_PREVIEW_COLOR = '#171717';
+
 const STORAGE_KEY = 'ui-library-components';
 
 const DB_NAME = 'ui-library-db';
@@ -71,6 +73,25 @@ const PREVIEW_STATES: {
     label: 'Loading',
   },
 ];
+
+function normalizeHexInput(value: string): string | null {
+  const cleaned = value.trim().replace(/^#/, '');
+
+  if (/^[0-9a-fA-F]{3}$/.test(cleaned)) {
+    const expanded = cleaned
+      .split('')
+      .map((c) => c + c)
+      .join('');
+
+    return `#${expanded.toLowerCase()}`;
+  }
+
+  if (/^[0-9a-fA-F]{6}$/.test(cleaned)) {
+    return `#${cleaned.toLowerCase()}`;
+  }
+
+  return null;
+}
 
 function createDefaultVariant(): ComponentVariant {
   return {
@@ -293,11 +314,15 @@ export default function LabPage() {
 
   const [previewMode, setPreviewMode] = useState<PreviewMode>('desktop');
 
-  const [previewColor, setPreviewColor] = useState('#171717');
+  const [previewColor, setPreviewColor] = useState(DEFAULT_PREVIEW_COLOR);
 
   const [previewPattern, setPreviewPattern] = useState<PreviewPattern>('none');
 
   const [previewState, setPreviewState] = useState<PreviewState>('default');
+
+  const [hexDraft, setHexDraft] = useState(DEFAULT_PREVIEW_COLOR);
+
+  const [copiedHex, setCopiedHex] = useState(false);
 
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('saved');
 
@@ -359,6 +384,11 @@ export default function LabPage() {
       cancelled = true;
     };
   }, []);
+
+  // Keep the hex input draft in sync with the actual preview color.
+  useEffect(() => {
+    setHexDraft(previewColor);
+  }, [previewColor]);
 
   async function saveComponents(nextComponents: ComponentItem[]) {
     setComponents(nextComponents);
@@ -607,6 +637,40 @@ export default function LabPage() {
 
   async function handleCopy() {
     await navigator.clipboard.writeText(code);
+  }
+
+  function handleHexChange(value: string) {
+    setHexDraft(value);
+
+    const normalized = normalizeHexInput(value);
+
+    if (normalized) {
+      setPreviewColor(normalized);
+    }
+  }
+
+  function handleHexBlur() {
+    const normalized = normalizeHexInput(hexDraft);
+
+    if (normalized) {
+      setHexDraft(normalized);
+
+      setPreviewColor(normalized);
+    } else {
+      setHexDraft(previewColor);
+    }
+  }
+
+  async function handleCopyHex() {
+    try {
+      await navigator.clipboard.writeText(previewColor);
+
+      setCopiedHex(true);
+
+      window.setTimeout(() => setCopiedHex(false), 1500);
+    } catch {
+      // Clipboard API unavailable — silently ignore.
+    }
   }
 
   async function handleDuplicate() {
@@ -1135,6 +1199,39 @@ export default function LabPage() {
                       className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
                     />
                   </label>
+                </div>
+
+                <div className="flex items-center gap-1 rounded-lg border border-white/10 bg-white/[0.03] p-1">
+                  <span
+                    className="ml-1 h-4 w-4 shrink-0 rounded-sm border border-white/15"
+                    style={{ backgroundColor: previewColor }}
+                    aria-hidden="true"
+                  />
+
+                  <input
+                    value={hexDraft}
+                    onChange={(event) => handleHexChange(event.target.value)}
+                    onBlur={handleHexBlur}
+                    spellCheck={false}
+                    autoComplete="off"
+                    aria-label="Hex color"
+                    placeholder="#171717"
+                    className="h-6 w-[78px] rounded-md bg-transparent px-1.5 font-mono text-[11px] text-white outline-none placeholder:text-white/25 focus:bg-white/10"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={handleCopyHex}
+                    title="Copy hex color"
+                    aria-label="Copy hex color"
+                    className={[
+                      'rounded-md px-2 py-1 text-[10px] font-semibold uppercase tracking-wider transition',
+                      copiedHex
+                        ? 'text-emerald-300'
+                        : 'text-white/40 hover:bg-white/5 hover:text-white',
+                    ].join(' ')}>
+                    {copiedHex ? 'Copied' : 'Copy'}
+                  </button>
                 </div>
 
                 <div className="flex items-center gap-1 rounded-lg border border-white/10 bg-white/[0.03] p-1">
