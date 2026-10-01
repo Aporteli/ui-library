@@ -1,3 +1,4 @@
+
 'use client';
 
 type PreviewMode = 'desktop' | 'tablet' | 'mobile';
@@ -30,7 +31,11 @@ const MODE_WIDTHS: Record<PreviewMode, string> = {
   mobile: '390px',
 };
 
-function hexToRgb(hex: string): { r: number; g: number; b: number } {
+function hexToRgb(hex: string): {
+  r: number;
+  g: number;
+  b: number;
+} {
   const cleaned = hex.replace('#', '').trim();
 
   const full =
@@ -51,12 +56,16 @@ function hexToRgb(hex: string): { r: number; g: number; b: number } {
 function getContrastColor(hex: string): string {
   const { r, g, b } = hexToRgb(hex);
 
-  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  const luminance =
+    (0.299 * r + 0.587 * g + 0.114 * b) / 255;
 
   return luminance > 0.55 ? '#171717' : '#ffffff';
 }
 
-function rgbaFromHex(hex: string, alpha: number): string {
+function rgbaFromHex(
+  hex: string,
+  alpha: number,
+): string {
   const { r, g, b } = hexToRgb(hex);
 
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
@@ -65,7 +74,11 @@ function rgbaFromHex(hex: string, alpha: number): string {
 function getPatternStyles(
   pattern: PreviewPattern,
   color: string,
-): { image?: string; size?: string; position?: string } {
+): {
+  image?: string;
+  size?: string;
+  position?: string;
+} {
   if (pattern === 'none') {
     return {};
   }
@@ -74,7 +87,17 @@ function getPatternStyles(
 
   if (pattern === 'grid') {
     return {
-      image: `linear-gradient(${rgbaFromHex(overlay, 0.07)} 1px, transparent 1px), linear-gradient(90deg, ${rgbaFromHex(overlay, 0.07)} 1px, transparent 1px)`,
+      image: `
+        linear-gradient(
+          ${rgbaFromHex(overlay, 0.07)} 1px,
+          transparent 1px
+        ),
+        linear-gradient(
+          90deg,
+          ${rgbaFromHex(overlay, 0.07)} 1px,
+          transparent 1px
+        )
+      `,
       size: '24px 24px',
       position: '0 0',
     };
@@ -82,9 +105,31 @@ function getPatternStyles(
 
   if (pattern === 'checker') {
     return {
-      image: `linear-gradient(45deg, ${rgbaFromHex(overlay, 0.05)} 25%, transparent 25%), linear-gradient(-45deg, ${rgbaFromHex(overlay, 0.05)} 25%, transparent 25%), linear-gradient(45deg, transparent 75%, ${rgbaFromHex(overlay, 0.05)} 75%), linear-gradient(-45deg, transparent 75%, ${rgbaFromHex(overlay, 0.05)} 75%)`,
+      image: `
+        linear-gradient(
+          45deg,
+          ${rgbaFromHex(overlay, 0.05)} 25%,
+          transparent 25%
+        ),
+        linear-gradient(
+          -45deg,
+          ${rgbaFromHex(overlay, 0.05)} 25%,
+          transparent 25%
+        ),
+        linear-gradient(
+          45deg,
+          transparent 75%,
+          ${rgbaFromHex(overlay, 0.05)} 75%
+        ),
+        linear-gradient(
+          -45deg,
+          transparent 75%,
+          ${rgbaFromHex(overlay, 0.05)} 75%
+        )
+      `,
       size: '24px 24px',
-      position: '0 0, 0 12px, 12px -12px, -12px 0',
+      position:
+        '0 0, 0 12px, 12px -12px, -12px 0',
     };
   }
 
@@ -156,12 +201,21 @@ const STATE_CSS = `
   }
 `;
 
-export function Preview({ code, mode, pattern, color, state }: PreviewProps) {
+export function Preview({
+  code,
+  mode,
+  pattern,
+  color,
+  state,
+}: PreviewProps) {
   const safeCode = escapeScriptContent(code);
 
   const textColor = getContrastColor(color);
 
-  const patternStyles = getPatternStyles(pattern, color);
+  const patternStyles = getPatternStyles(
+    pattern,
+    color,
+  );
 
   const previewDocument = `
 <!DOCTYPE html>
@@ -169,10 +223,26 @@ export function Preview({ code, mode, pattern, color, state }: PreviewProps) {
 <head>
   <meta charset="UTF-8" />
 
-  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  />
+
+  <script
+    src="https://unpkg.com/react@18/umd/react.development.js"
+  ></script>
+
+  <script
+    src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"
+  ></script>
+
+  <script
+    src="https://unpkg.com/@babel/standalone/babel.min.js"
+  ></script>
+
+  <script
+    src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"
+  ></script>
 
   <style>
     html,
@@ -194,9 +264,23 @@ export function Preview({ code, mode, pattern, color, state }: PreviewProps) {
       background-color: ${color};
       color: ${textColor};
 
-      ${patternStyles.image ? `background-image: ${patternStyles.image};` : ''}
-      ${patternStyles.size ? `background-size: ${patternStyles.size};` : ''}
-      ${patternStyles.position ? `background-position: ${patternStyles.position};` : ''}
+      ${
+        patternStyles.image
+          ? `background-image: ${patternStyles.image};`
+          : ''
+      }
+
+      ${
+        patternStyles.size
+          ? `background-size: ${patternStyles.size};`
+          : ''
+      }
+
+      ${
+        patternStyles.position
+          ? `background-position: ${patternStyles.position};`
+          : ''
+      }
 
       font-family:
         Inter,
@@ -214,6 +298,13 @@ export function Preview({ code, mode, pattern, color, state }: PreviewProps) {
       box-sizing: border-box;
     }
 
+    button,
+    input,
+    textarea,
+    select {
+      font: inherit;
+    }
+
     ${STATE_CSS}
   </style>
 </head>
@@ -224,21 +315,205 @@ export function Preview({ code, mode, pattern, color, state }: PreviewProps) {
     data-preview-state="${state}"
   ></div>
 
-  <script type="text/babel" data-presets="react">
-    try {
-      const Component = () => (
-        ${safeCode}
-      );
+  <script>
+    window.addEventListener(
+      "error",
+      function (event) {
+        console.error(
+          "Preview runtime error:",
+          event.error || event.message
+        );
+      }
+    );
 
-      const root = ReactDOM.createRoot(
-        document.getElementById("root")
-      );
+    window.addEventListener(
+      "unhandledrejection",
+      function (event) {
+        console.error(
+          "Preview promise error:",
+          event.reason
+        );
+      }
+    );
+  </script>
+
+  <script type="text/babel">
+    try {
+      /*
+       * React aliases.
+       *
+       * This allows component code to use either:
+       *
+       * React.useState(...)
+       *
+       * or:
+       *
+       * useState(...)
+       */
+      const {
+        useState,
+        useEffect,
+        useMemo,
+        useCallback,
+        useRef,
+        useReducer,
+        useContext,
+        useId,
+        useLayoutEffect,
+        useImperativeHandle,
+        useMemo,
+        useSyncExternalStore,
+        useTransition,
+        useDeferredValue,
+        Fragment
+      } = React;
+
+      /*
+       * ---------------------------------------------------
+       * USER CODE
+       * ---------------------------------------------------
+       *
+       * The user's code is transformed by a custom Babel
+       * plugin below.
+       *
+       * The final JSX expression:
+       *
+       * <Slider />
+       *
+       * becomes:
+       *
+       * return <Slider />;
+       *
+       * inside __PreviewRoot.
+       */
+      const __userCode = ${JSON.stringify(safeCode)};
+
+      /*
+       * Custom Babel plugin.
+       *
+       * We wrap the complete user program inside:
+       *
+       * function __PreviewRoot() {
+       *   USER CODE
+       * }
+       *
+       * A JSX expression cannot normally exist by itself
+       * inside a function body, so we transform the LAST
+       * top-level expression into a return statement.
+       */
+      const previewPlugin = function ({ types: t }) {
+        return {
+          visitor: {
+            Program(path) {
+              const body = path.node.body;
+
+              if (!body.length) {
+                throw new Error(
+                  "Preview code is empty."
+                );
+              }
+
+              const last = body[body.length - 1];
+
+              /*
+               * Expected final expression:
+               *
+               * <Component />
+               *
+               * or:
+               *
+               * <div>...</div>
+               */
+              if (
+                !t.isExpressionStatement(last)
+              ) {
+                throw new Error(
+                  "The last line of the preview must be a JSX element, for example <Button />."
+                );
+              }
+
+              body[body.length - 1] =
+                t.returnStatement(last.expression);
+            }
+          }
+        };
+      };
+
+      /*
+       * Create a function around the user's program.
+       *
+       * This gives hooks a valid React component scope.
+       */
+      const wrappedCode = \`
+        function __PreviewRoot() {
+          \${__userCode}
+        }
+      \`;
+
+      /*
+       * Babel transforms:
+       *
+       * JSX
+       * modern JavaScript
+       * React syntax
+       *
+       * into browser-executable JavaScript.
+       */
+      const transformed =
+        Babel.transform(
+          wrappedCode,
+          {
+            presets: [
+              [
+                "react",
+                {
+                  runtime: "classic"
+                }
+              ],
+              "env"
+            ],
+            plugins: [
+              previewPlugin
+            ]
+          }
+        ).code;
+
+      /*
+       * Execute the generated component code.
+       *
+       * React and ReactDOM are already available
+       * globally from the scripts above.
+       */
+      const executePreview =
+        new Function(
+          "React",
+          "ReactDOM",
+          transformed +
+          "\\nreturn __PreviewRoot;"
+        );
+
+      const PreviewRoot =
+        executePreview(
+          React,
+          ReactDOM
+        );
+
+      /*
+       * Mount the user's component.
+       */
+      const rootElement =
+        document.getElementById("root");
+
+      const root =
+        ReactDOM.createRoot(rootElement);
 
       root.render(
-        React.createElement(Component)
+        React.createElement(PreviewRoot)
       );
+
     } catch (error) {
-      const root = document.getElementById("root");
+      const root =
+        document.getElementById("root");
 
       root.innerHTML = "";
 
@@ -255,7 +530,7 @@ export function Preview({ code, mode, pattern, color, state }: PreviewProps) {
         "rgba(127,29,29,.18)";
       errorBox.style.color = "#fca5a5";
       errorBox.style.fontFamily =
-        "ui-monospace, monospace";
+        "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace";
       errorBox.style.fontSize = "13px";
       errorBox.style.lineHeight = "1.6";
       errorBox.style.whiteSpace = "pre-wrap";
@@ -266,6 +541,11 @@ export function Preview({ code, mode, pattern, color, state }: PreviewProps) {
           : String(error);
 
       root.appendChild(errorBox);
+
+      console.error(
+        "Component preview error:",
+        error
+      );
     }
   </script>
 </body>
@@ -290,3 +570,4 @@ export function Preview({ code, mode, pattern, color, state }: PreviewProps) {
     </div>
   );
 }
+
