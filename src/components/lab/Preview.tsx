@@ -62,10 +62,7 @@ function getContrastColor(hex: string): string {
   return luminance > 0.55 ? '#171717' : '#ffffff';
 }
 
-function rgbaFromHex(
-  hex: string,
-  alpha: number,
-): string {
+function rgbaFromHex(hex: string, alpha: number): string {
   const { r, g, b } = hexToRgb(hex);
 
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
@@ -103,37 +100,33 @@ function getPatternStyles(
     };
   }
 
-  if (pattern === 'checker') {
-    return {
-      image: `
-        linear-gradient(
-          45deg,
-          ${rgbaFromHex(overlay, 0.05)} 25%,
-          transparent 25%
-        ),
-        linear-gradient(
-          -45deg,
-          ${rgbaFromHex(overlay, 0.05)} 25%,
-          transparent 25%
-        ),
-        linear-gradient(
-          45deg,
-          transparent 75%,
-          ${rgbaFromHex(overlay, 0.05)} 75%
-        ),
-        linear-gradient(
-          -45deg,
-          transparent 75%,
-          ${rgbaFromHex(overlay, 0.05)} 75%
-        )
-      `,
-      size: '24px 24px',
-      position:
-        '0 0, 0 12px, 12px -12px, -12px 0',
-    };
-  }
-
-  return {};
+  return {
+    image: `
+      linear-gradient(
+        45deg,
+        ${rgbaFromHex(overlay, 0.05)} 25%,
+        transparent 25%
+      ),
+      linear-gradient(
+        -45deg,
+        ${rgbaFromHex(overlay, 0.05)} 25%,
+        transparent 25%
+      ),
+      linear-gradient(
+        45deg,
+        transparent 75%,
+        ${rgbaFromHex(overlay, 0.05)} 75%
+      ),
+      linear-gradient(
+        -45deg,
+        transparent 75%,
+        ${rgbaFromHex(overlay, 0.05)} 75%
+      )
+    `,
+    size: '24px 24px',
+    position:
+      '0 0, 0 12px, 12px -12px, -12px 0',
+  };
 }
 
 const STATE_CSS = `
@@ -208,14 +201,14 @@ export function Preview({
   color,
   state,
 }: PreviewProps) {
-  const safeCode = escapeScriptContent(code);
-
   const textColor = getContrastColor(color);
 
   const patternStyles = getPatternStyles(
     pattern,
     color,
   );
+
+  const safeCode = escapeScriptContent(code);
 
   const previewDocument = `
 <!DOCTYPE html>
@@ -228,21 +221,13 @@ export function Preview({
     content="width=device-width, initial-scale=1.0"
   />
 
-  <script
-    src="https://unpkg.com/react@18/umd/react.development.js"
-  ></script>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
 
-  <script
-    src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"
-  ></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
 
-  <script
-    src="https://unpkg.com/@babel/standalone/babel.min.js"
-  ></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-  <script
-    src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"
-  ></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 
   <style>
     html,
@@ -316,152 +301,127 @@ export function Preview({
   ></div>
 
   <script>
+    window.__previewError = null;
+
     window.addEventListener(
       "error",
       function (event) {
-        console.error(
-          "Preview runtime error:",
-          event.error || event.message
-        );
+        window.__previewError =
+          event.error || new Error(event.message);
       }
     );
 
     window.addEventListener(
       "unhandledrejection",
       function (event) {
-        console.error(
-          "Preview promise error:",
-          event.reason
-        );
+        window.__previewError =
+          event.reason instanceof Error
+            ? event.reason
+            : new Error(String(event.reason));
       }
     );
   </script>
 
   <script type="text/babel">
+    /*
+     * =====================================================
+     * USER CODE
+     * =====================================================
+     *
+     * The editor can now contain complete React code.
+     *
+     * Example:
+     *
+     * function Slider() {
+     *   const [value, setValue] = React.useState(50);
+     *
+     *   return (
+     *     <input
+     *       type="range"
+     *       value={value}
+     *       onChange={(event) =>
+     *         setValue(Number(event.target.value))
+     *       }
+     *     />
+     *   );
+     * }
+     *
+     * <Slider />
+     */
+
+    const userCode = ${JSON.stringify(safeCode)};
+
+    /*
+     * -----------------------------------------------------
+     * Find the last top-level JSX expression.
+     * -----------------------------------------------------
+     *
+     * We support:
+     *
+     * function Button() { ... }
+     *
+     * <Button />
+     *
+     * The last JSX expression becomes the render target.
+     *
+     * Instead of trying to manually parse JavaScript,
+     * we let Babel parse it for us.
+     */
+
+    function previewPlugin({ types: t }) {
+      return {
+        visitor: {
+          Program(path) {
+            const body = path.node.body;
+
+            if (body.length === 0) {
+              throw new Error(
+                "Preview code is empty."
+              );
+            }
+
+            const lastStatement =
+              body[body.length - 1];
+
+            if (
+              !t.isExpressionStatement(
+                lastStatement
+              )
+            ) {
+              throw new Error(
+                "The preview code must end with a JSX element, for example <Button />."
+              );
+            }
+
+            const expression =
+              lastStatement.expression;
+
+            body[body.length - 1] =
+              t.returnStatement(expression);
+          }
+        }
+      };
+    }
+
     try {
       /*
-       * React aliases.
+       * We create a React component around
+       * the user's complete program.
        *
-       * This allows component code to use either:
-       *
-       * React.useState(...)
-       *
-       * or:
-       *
-       * useState(...)
+       * This means hooks are valid.
        */
-      const {
-        useState,
-        useEffect,
-        useMemo,
-        useCallback,
-        useRef,
-        useReducer,
-        useContext,
-        useId,
-        useLayoutEffect,
-        useImperativeHandle,
-        useMemo,
-        useSyncExternalStore,
-        useTransition,
-        useDeferredValue,
-        Fragment
-      } = React;
+      const wrappedSource = \`
+function __PreviewComponent() {
+  \${userCode}
+}
+\`;
 
       /*
-       * ---------------------------------------------------
-       * USER CODE
-       * ---------------------------------------------------
-       *
-       * The user's code is transformed by a custom Babel
-       * plugin below.
-       *
-       * The final JSX expression:
-       *
-       * <Slider />
-       *
-       * becomes:
-       *
-       * return <Slider />;
-       *
-       * inside __PreviewRoot.
-       */
-      const __userCode = ${JSON.stringify(safeCode)};
-
-      /*
-       * Custom Babel plugin.
-       *
-       * We wrap the complete user program inside:
-       *
-       * function __PreviewRoot() {
-       *   USER CODE
-       * }
-       *
-       * A JSX expression cannot normally exist by itself
-       * inside a function body, so we transform the LAST
-       * top-level expression into a return statement.
-       */
-      const previewPlugin = function ({ types: t }) {
-        return {
-          visitor: {
-            Program(path) {
-              const body = path.node.body;
-
-              if (!body.length) {
-                throw new Error(
-                  "Preview code is empty."
-                );
-              }
-
-              const last = body[body.length - 1];
-
-              /*
-               * Expected final expression:
-               *
-               * <Component />
-               *
-               * or:
-               *
-               * <div>...</div>
-               */
-              if (
-                !t.isExpressionStatement(last)
-              ) {
-                throw new Error(
-                  "The last line of the preview must be a JSX element, for example <Button />."
-                );
-              }
-
-              body[body.length - 1] =
-                t.returnStatement(last.expression);
-            }
-          }
-        };
-      };
-
-      /*
-       * Create a function around the user's program.
-       *
-       * This gives hooks a valid React component scope.
-       */
-      const wrappedCode = \`
-        function __PreviewRoot() {
-          \${__userCode}
-        }
-      \`;
-
-      /*
-       * Babel transforms:
-       *
-       * JSX
-       * modern JavaScript
-       * React syntax
-       *
-       * into browser-executable JavaScript.
+       * Transform JSX + modern JavaScript.
        */
       const transformed =
         Babel.transform(
-          wrappedCode,
+          wrappedSource,
           {
             presets: [
               [
@@ -470,7 +430,12 @@ export function Preview({
                   runtime: "classic"
                 }
               ],
-              "env"
+              [
+                "env",
+                {
+                  modules: false
+                }
+              ]
             ],
             plugins: [
               previewPlugin
@@ -479,27 +444,22 @@ export function Preview({
         ).code;
 
       /*
-       * Execute the generated component code.
+       * Execute the transformed program.
        *
-       * React and ReactDOM are already available
-       * globally from the scripts above.
+       * React is passed explicitly.
        */
-      const executePreview =
+      const createComponent =
         new Function(
           "React",
-          "ReactDOM",
           transformed +
-          "\\nreturn __PreviewRoot;"
+          "\\nreturn __PreviewComponent;"
         );
 
-      const PreviewRoot =
-        executePreview(
-          React,
-          ReactDOM
-        );
+      const PreviewComponent =
+        createComponent(React);
 
       /*
-       * Mount the user's component.
+       * Mount React.
        */
       const rootElement =
         document.getElementById("root");
@@ -508,7 +468,9 @@ export function Preview({
         ReactDOM.createRoot(rootElement);
 
       root.render(
-        React.createElement(PreviewRoot)
+        React.createElement(
+          PreviewComponent
+        )
       );
 
     } catch (error) {
@@ -523,16 +485,24 @@ export function Preview({
       errorBox.style.width = "100%";
       errorBox.style.maxWidth = "720px";
       errorBox.style.padding = "20px";
+
       errorBox.style.border =
         "1px solid rgba(248,113,113,.25)";
+
       errorBox.style.borderRadius = "12px";
+
       errorBox.style.background =
         "rgba(127,29,29,.18)";
+
       errorBox.style.color = "#fca5a5";
+
       errorBox.style.fontFamily =
         "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace";
+
       errorBox.style.fontSize = "13px";
+
       errorBox.style.lineHeight = "1.6";
+
       errorBox.style.whiteSpace = "pre-wrap";
 
       errorBox.textContent =
@@ -543,7 +513,7 @@ export function Preview({
       root.appendChild(errorBox);
 
       console.error(
-        "Component preview error:",
+        "UI Lab preview error:",
         error
       );
     }
